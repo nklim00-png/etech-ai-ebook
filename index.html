@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0" />
+  <title>㈜이테크시스템 | AI 팩토리 디지털 브로슈어 (e-Book)</title>
+  <style>
+    :root {
+      --bg: #060C1A;
+      --card: #0D192E;
+      --cyan: #00BCEB;
+      --mint: #00E5A3;
+      --text: #F1F5F9;
+      --muted: #94A3B8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans KR', 'Malgun Gothic', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      width: 100%;
+      background: rgba(13, 25, 46, 0.95);
+      border-bottom: 2px solid var(--cyan);
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .brand { font-size: 14px; font-weight: 800; color: #fff; }
+    .brand span { color: var(--cyan); font-weight: 600; margin-left: 6px; font-size: 12px; }
+    .dl-btn {
+      background: linear-gradient(135deg, #049FD9, #00BCEB);
+      color: #060C1A;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0, 188, 235, 0.35);
+    }
+    .viewer-wrap {
+      width: 100%;
+      max-width: 720px;
+      padding: 16px 12px 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .page-indicator {
+      font-size: 13px;
+      color: var(--cyan);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .book-frame {
+      width: 100%;
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #1E3A5F;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+      background: #0D192E;
+      touch-action: pan-y pinch-zoom;
+    }
+    .book-frame img {
+      width: 100%;
+      display: block;
+      transition: opacity 0.25s ease;
+    }
+    .nav-bar {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(13, 25, 46, 0.94);
+      border: 1px solid #1E3A5F;
+      backdrop-filter: blur(8px);
+      padding: 8px 14px;
+      border-radius: 999px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      z-index: 20;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    }
+    .nav-btn {
+      background: #162947;
+      color: #fff;
+      border: 1px solid #2A4A7F;
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .nav-btn:disabled { opacity: 0.4; cursor: default; }
+    /* Modal */
+    .modal-bg {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 7, 16, 0.82);
+      backdrop-filter: blur(4px);
+      z-index: 50;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+    .modal-bg.open { display: flex; }
+    .modal {
+      width: 100%;
+      max-width: 400px;
+      background: var(--card);
+      border: 1.5px solid var(--cyan);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+    }
+    .modal h2 { font-size: 18px; margin-bottom: 6px; color: #fff; }
+    .modal p { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.45; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 12px; color: var(--cyan); font-weight: 700; margin-bottom: 5px; }
+    .field input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #2A4A7F;
+      background: #071020;
+      color: #fff;
+      font-size: 14px;
+    }
+    .submit-btn {
+      width: 100%;
+      margin-top: 6px;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, #049FD9, #00E5A3);
+      color: #060C1A;
+      font-weight: 900;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .close-btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 8px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">㈜이테크시스템 <span>Cisco 공식 파트너</span></div>
+    <button class="dl-btn" onclick="openModal()">PDF 다운로드</button>
+  </header>
+
+  <div class="viewer-wrap">
+    <div class="page-indicator" id="pageLabel">1 / 2 페이지 (표지 · 핵심 가치) — 좌우로 넘겨보세요</div>
+    <div class="book-frame" id="bookFrame">
+      <img id="bookImg" src="page1.png" alt="브로슈어 페이지" />
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <button class="nav-btn" id="prevBtn" onclick="setPage(1)" disabled>◀ 앞면 (1P)</button>
+    <button class="nav-btn" id="nextBtn" onclick="setPage(2)">뒷면 스펙표 (2P) ▶</button>
+  </div>
+
+  <div class="modal-bg" id="modalBg">
+    <div class="modal">
+      <h2>브로슈어 PDF 다운로드</h2>
+      <p>간단한 방문 정보를 입력해 주시면 고화질 세부 스펙 브로슈어 PDF를 즉시 다운로드하실 수 있습니다.</p>
+      <form id="leadForm" name="brochure-leads" method="POST" data-netlify="true" onsubmit="submitLead(event)">
+        <input type="hidden" name="form-name" value="brochure-leads" />
+        <div class="field">
+          <label>성함 *</label>
+          <input type="text" id="vName" name="name" placeholder="예: 홍길동" required />
+        </div>
+        <div class="field">
+          <label>소속 기관 / 기업명 *</label>
+          <input type="text" id="vOrg" name="org" placeholder="예: 한전KDN" required />
+        </div>
+        <div class="field">
+          <label>연락처 또는 이메일 *</label>
+          <input type="text" id="vContact" name="contact" placeholder="예: 010-1234-5678 / email@company.kr" required />
+        </div>
+        <button type="submit" class="submit-btn" id="subBtn">입력 완료 및 PDF 다운로드</button>
+        <button type="button" class="close-btn" onclick="closeModal()">닫기</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let curPage = 1;
+    function setPage(p) {
+      curPage = p;
+      const img = document.getElementById('bookImg');
+      img.style.opacity = 0.3;
+      setTimeout(() => {
+        img.src = p === 1 ? 'page1.png' : 'page2.png';
+        img.style.opacity = 1;
+      }, 150);
+      document.getElementById('pageLabel').textContent = p === 1
+        ? '1 / 2 페이지 (표지 · 핵심 가치) — 좌우로 넘겨보세요'
+        : '2 / 2 페이지 (세부 기술 사양표 · 문의처)';
+      document.getElementById('prevBtn').disabled = (p === 1);
+      document.getElementById('nextBtn').disabled = (p === 2);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    let touchStartX = 0;
+    const frame = document.getElementById('bookFrame');
+    frame.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+    frame.addEventListener('touchend', e => {
+      const diff = e.changedTouches[0].screenX - touchStartX;
+      if (diff < -50 && curPage === 1) setPage(2);
+      if (diff > 50 && curPage === 2) setPage(1);
+    });
+
+    function openModal() { document.getElementById('modalBg').classList.add('open'); }
+    function closeModal() { document.getElementById('modalBg').classList.remove('open'); }
+
+    async function submitLead(e) {
+      e.preventDefault();
+      const btn = document.getElementById('subBtn');
+      btn.disabled = true;
+      btn.textContent = '처리 중...';
+
+      const name = document.getElementById('vName').value.trim();
+      const org = document.getElementById('vOrg').value.trim();
+      const contact = document.getElementById('vContact').value.trim();
+      const isLocal = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+
+      try {
+        if (isLocal) {
+          await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, org, contact })
+          });
+        } else {
+          // Submit to Netlify Forms
+          const formData = new URLSearchParams();
+          formData.append('form-name', 'brochure-leads');
+          formData.append('name', name);
+          formData.append('org', org);
+          formData.append('contact', contact);
+          await fetch('/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+          });
+        }
+      } catch (err) { console.error(err); }
+
+      closeModal();
+      btn.disabled = false;
+      btn.textContent = '입력 완료 및 PDF 다운로드';
+
+      const a = document.createElement('a');
+      a.href = 'brochure.pdf';
+      a.download = '이테크시스템_AI팩토리_브로슈어_2026빛가람컨퍼런스.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+  </script>
+</body>
+</html>
