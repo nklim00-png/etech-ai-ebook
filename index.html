@@ -51,7 +51,7 @@
     .viewer-wrap {
       width: 100%;
       max-width: 720px;
-      padding: 16px 12px 90px;
+      padding: 16px 12px 84px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -61,6 +61,7 @@
       color: var(--cyan);
       font-weight: 700;
       margin-bottom: 10px;
+      text-align: center;
     }
     .book-frame {
       width: 100%;
@@ -70,12 +71,27 @@
       border: 1px solid #1E3A5F;
       box-shadow: 0 12px 32px rgba(0,0,0,0.6);
       background: #0D192E;
-      touch-action: pan-y pinch-zoom;
     }
-    .book-frame img {
+    .book-slider {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .book-slider::-webkit-scrollbar { display: none; }
+    .book-slide {
+      flex: 0 0 100%;
+      width: 100%;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+    }
+    .book-slide img {
       width: 100%;
       display: block;
-      transition: opacity 0.25s ease;
+      user-select: none;
+      -webkit-user-drag: none;
     }
     .nav-bar {
       position: fixed;
@@ -85,25 +101,50 @@
       background: rgba(13, 25, 46, 0.94);
       border: 1px solid #1E3A5F;
       backdrop-filter: blur(8px);
-      padding: 8px 14px;
+      padding: 8px 16px;
       border-radius: 999px;
       display: flex;
-      gap: 12px;
+      gap: 14px;
       align-items: center;
       z-index: 20;
       box-shadow: 0 6px 20px rgba(0,0,0,0.5);
     }
-    .nav-btn {
-      background: #162947;
-      color: #fff;
-      border: 1px solid #2A4A7F;
-      padding: 7px 14px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 700;
+    .slide-arrow {
+      background: transparent;
+      border: none;
+      color: var(--cyan);
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1;
+      padding: 2px 6px;
       cursor: pointer;
     }
-    .nav-btn:disabled { opacity: 0.4; cursor: default; }
+    .slide-arrow:disabled { opacity: 0.25; cursor: default; }
+    .dots {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #334E7B;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .dot.active {
+      width: 24px;
+      background: var(--cyan);
+    }
+    .swipe-hint {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
     /* Modal */
     .modal-bg {
       display: none;
@@ -170,15 +211,27 @@
   </header>
 
   <div class="viewer-wrap">
-    <div class="page-indicator" id="pageLabel">1 / 2 페이지 (표지 · 핵심 가치) — 좌우로 넘겨보세요</div>
-    <div class="book-frame" id="bookFrame">
-      <img id="bookImg" src="page1.png" alt="브로슈어 페이지" />
+    <div class="page-indicator" id="pageLabel">1 / 2 페이지 (표지 · 핵심 가치) — 좌우로 슬라이드하세요</div>
+    <div class="book-frame">
+      <div class="book-slider" id="bookSlider">
+        <div class="book-slide">
+          <img src="page1.png" alt="브로슈어 1페이지 (표지 · 핵심 가치)" />
+        </div>
+        <div class="book-slide">
+          <img src="page2.png" alt="브로슈어 2페이지 (세부 기술 사양표)" />
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="nav-bar">
-    <button class="nav-btn" id="prevBtn" onclick="setPage(1)" disabled>◀ 앞면 (1P)</button>
-    <button class="nav-btn" id="nextBtn" onclick="setPage(2)">뒷면 스펙표 (2P) ▶</button>
+    <button class="slide-arrow" id="prevBtn" onclick="goSlide(0)" aria-label="이전 페이지" disabled>‹</button>
+    <div class="dots">
+      <button class="dot active" id="dot0" onclick="goSlide(0)" aria-label="1페이지"></button>
+      <button class="dot" id="dot1" onclick="goSlide(1)" aria-label="2페이지"></button>
+    </div>
+    <span class="swipe-hint" id="swipeHint">1 / 2 · 좌우 슬라이드</span>
+    <button class="slide-arrow" id="nextBtn" onclick="goSlide(1)" aria-label="다음 페이지">›</button>
   </div>
 
   <div class="modal-bg" id="modalBg">
@@ -206,30 +259,59 @@
   </div>
 
   <script>
-    let curPage = 1;
-    function setPage(p) {
-      curPage = p;
-      const img = document.getElementById('bookImg');
-      img.style.opacity = 0.3;
-      setTimeout(() => {
-        img.src = p === 1 ? 'page1.png' : 'page2.png';
-        img.style.opacity = 1;
-      }, 150);
-      document.getElementById('pageLabel').textContent = p === 1
-        ? '1 / 2 페이지 (표지 · 핵심 가치) — 좌우로 넘겨보세요'
+    const slider = document.getElementById('bookSlider');
+    const pageLabel = document.getElementById('pageLabel');
+    const swipeHint = document.getElementById('swipeHint');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const dot0 = document.getElementById('dot0');
+    const dot1 = document.getElementById('dot1');
+
+    function updateSlideUI(idx) {
+      const p = idx + 1;
+      pageLabel.textContent = p === 1
+        ? '1 / 2 페이지 (표지 · 핵심 가치) — 좌우로 슬라이드하세요'
         : '2 / 2 페이지 (세부 기술 사양표 · 문의처)';
-      document.getElementById('prevBtn').disabled = (p === 1);
-      document.getElementById('nextBtn').disabled = (p === 2);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      swipeHint.textContent = p + ' / 2 · 좌우 슬라이드';
+      prevBtn.disabled = (idx === 0);
+      nextBtn.disabled = (idx === 1);
+      dot0.classList.toggle('active', idx === 0);
+      dot1.classList.toggle('active', idx === 1);
     }
 
-    let touchStartX = 0;
-    const frame = document.getElementById('bookFrame');
-    frame.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
-    frame.addEventListener('touchend', e => {
-      const diff = e.changedTouches[0].screenX - touchStartX;
-      if (diff < -50 && curPage === 1) setPage(2);
-      if (diff > 50 && curPage === 2) setPage(1);
+    function goSlide(idx) {
+      const w = slider.clientWidth;
+      slider.scrollTo({ left: idx * w, behavior: 'smooth' });
+      updateSlideUI(idx);
+    }
+
+    let scrollTimer;
+    slider.addEventListener('scroll', () => {
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => {
+        const w = slider.clientWidth || 1;
+        const idx = Math.round(slider.scrollLeft / w);
+        updateSlideUI(idx);
+      }, 60);
+    }, { passive: true });
+
+    // Desktop mouse drag support
+    let isDown = false, startX = 0, startScroll = 0;
+    slider.addEventListener('mousedown', e => {
+      isDown = true;
+      startX = e.pageX;
+      startScroll = slider.scrollLeft;
+    });
+    window.addEventListener('mouseup', () => {
+      if (!isDown) return;
+      isDown = false;
+      const w = slider.clientWidth || 1;
+      goSlide(Math.round(slider.scrollLeft / w));
+    });
+    slider.addEventListener('mousemove', e => {
+      if (!isDown) return;
+      e.preventDefault();
+      slider.scrollLeft = startScroll - (e.pageX - startX);
     });
 
     function openModal() { document.getElementById('modalBg').classList.add('open'); }
