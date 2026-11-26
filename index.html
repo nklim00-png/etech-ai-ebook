@@ -202,6 +202,40 @@
       font-size: 13px;
       cursor: pointer;
     }
+    .confirm-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      background: rgba(0, 229, 163, 0.16);
+      border: 1.5px solid var(--mint);
+      color: var(--mint);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 900;
+      margin: 0 auto 12px;
+    }
+    .confirm-title { text-align: center; }
+    .confirm-desc { text-align: center; }
+    .confirm-box {
+      background: #071020;
+      border: 1px solid #1E3A5F;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+    .confirm-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(30, 58, 95, 0.5);
+    }
+    .confirm-row:last-child { border-bottom: none; }
+    .confirm-key { color: var(--cyan); font-weight: 700; flex-shrink: 0; }
+    .confirm-val { color: #fff; text-align: right; word-break: break-all; }
   </style>
 </head>
 <body>
@@ -255,6 +289,22 @@
         <button type="submit" class="submit-btn" id="subBtn">PDF 브로슈어 바로 다운로드</button>
         <button type="button" class="close-btn" onclick="closeModal()">닫기</button>
       </form>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="confirmModalBg">
+    <div class="modal">
+      <div class="confirm-badge">✓</div>
+      <h2 class="confirm-title" id="confirmTitle">접수 및 다운로드 완료</h2>
+      <p class="confirm-desc" id="confirmDesc">입력하신 정보가 정상 접수되었으며, PDF 브로슈어 다운로드가 시작되었습니다.</p>
+      <div class="confirm-box" id="confirmBox">
+        <div class="confirm-row"><span class="confirm-key">성함</span><span class="confirm-val" id="cfName">-</span></div>
+        <div class="confirm-row"><span class="confirm-key">소속</span><span class="confirm-val" id="cfOrg">-</span></div>
+        <div class="confirm-row"><span class="confirm-key">연락처</span><span class="confirm-val" id="cfContact">-</span></div>
+        <div class="confirm-row"><span class="confirm-key">확인 시각</span><span class="confirm-val" id="cfTime">-</span></div>
+      </div>
+      <button type="button" class="submit-btn" onclick="closeConfirmModal()">확인</button>
+      <button type="button" class="close-btn" onclick="triggerPdfDownload()">PDF가 안 받아지면 다시 다운로드</button>
     </div>
   </div>
 
@@ -316,6 +366,42 @@
 
     function openModal() { document.getElementById('modalBg').classList.add('open'); }
     function closeModal() { document.getElementById('modalBg').classList.remove('open'); }
+    function closeConfirmModal() { document.getElementById('confirmModalBg').classList.remove('open'); }
+
+    function triggerPdfDownload() {
+      const a = document.createElement('a');
+      a.href = 'brochure.pdf';
+      a.download = '이테크시스템_AI팩토리_브로슈어_2026빛가람컨퍼런스.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    function openConfirmModal(name, org, contact) {
+      const hasInfo = Boolean(name || org || contact);
+      const titleEl = document.getElementById('confirmTitle');
+      const descEl = document.getElementById('confirmDesc');
+      const boxEl = document.getElementById('confirmBox');
+
+      if (hasInfo) {
+        titleEl.textContent = '접수 및 다운로드 완료';
+        descEl.textContent = '입력하신 정보가 정상 접수되었으며, PDF 브로슈어 다운로드가 시작되었습니다.';
+        boxEl.style.display = 'block';
+        document.getElementById('cfName').textContent = name || '-';
+        document.getElementById('cfOrg').textContent = org || '-';
+        document.getElementById('cfContact').textContent = contact || '-';
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        document.getElementById('cfTime').textContent =
+          now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + ' ' +
+          pad(now.getHours()) + ':' + pad(now.getMinutes());
+      } else {
+        titleEl.textContent = '브로슈어 다운로드 완료';
+        descEl.textContent = 'PDF 브로슈어 다운로드가 시작되었습니다. 감사합니다.';
+        boxEl.style.display = 'none';
+      }
+      document.getElementById('confirmModalBg').classList.add('open');
+    }
 
     async function submitLead(e) {
       e.preventDefault();
@@ -356,12 +442,8 @@
       btn.disabled = false;
       btn.textContent = 'PDF 브로슈어 바로 다운로드';
 
-      const a = document.createElement('a');
-      a.href = 'brochure.pdf';
-      a.download = '이테크시스템_AI팩토리_브로슈어_2026빛가람컨퍼런스.pdf';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      triggerPdfDownload();
+      openConfirmModal(name, org, contact);
     }
   </script>
 </body>
