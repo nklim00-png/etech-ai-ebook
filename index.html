@@ -292,7 +292,7 @@
     </div>
   </div>
 
-  <div class="modal-bg" id="confirmModalBg" onclick="if(event.target===this) closeConfirmModal()">
+  <div class="modal-bg" id="confirmModalBg">
     <div class="modal">
       <div class="confirm-badge">✓</div>
       <h2 class="confirm-title" id="confirmTitle">접수 및 다운로드 완료</h2>
@@ -303,6 +303,7 @@
         <div class="confirm-row"><span class="confirm-key">연락처</span><span class="confirm-val" id="cfContact">-</span></div>
         <div class="confirm-row"><span class="confirm-key">확인 시각</span><span class="confirm-val" id="cfTime">-</span></div>
       </div>
+      <button type="button" class="submit-btn" onclick="closeConfirmModal()">확인</button>
       <button type="button" class="close-btn" onclick="triggerPdfDownload()">PDF가 안 받아지면 다시 다운로드</button>
     </div>
   </div>
